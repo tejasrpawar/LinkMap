@@ -107,7 +107,7 @@
             const result = reader.result.substring(reader.result.search(LINKED_IN_CSV_HEADER));
             const connections = $.csv.toObjects(result);
 
-            nodes.push({
+            nodes.push({    
                 "firstName": "You",
                 "lastName": "",
                 "name": "You",
@@ -334,12 +334,12 @@
                 })
         }
 
-        // Add click handler function
+        // Update the clicked function
         function clicked(d) {
             const event = d3.event;
-            event.stopPropagation(); // Prevent click from bubbling up
+            event.stopPropagation();
 
-            if (event.defaultPrevented) return; // Skip if dragged
+            if (event.defaultPrevented) return;
 
             const transition = svg.transition().duration(750);
             
@@ -347,9 +347,12 @@
                 // Reset zoom on shift+click
                 svg.transition().duration(750)
                     .call(zoom.transform, d3.zoomIdentity);
-                // Reset all opacities
-                link.transition().duration(750).style("opacity", 0.4);
-                node.transition().duration(750).style("opacity", 1);
+                // Reset all opacities and stroke widths
+                link.transition().duration(750)
+                    .style("opacity", 0.4)
+                    .style("stroke-width", 1);
+                node.transition().duration(750)
+                    .style("opacity", 1);
                 return;
             }
 
@@ -372,10 +375,26 @@
                     scale = Math.min(8, 0.9 / Math.max(dx / width, dy / height)),
                     translate = [width / 2 - scale * x, height / 2 - scale * y];
 
-                // Fade out unrelated nodes and links
+                // Fade out unrelated nodes and links with different opacities and stroke widths
                 link.transition().duration(750)
-                    .style("opacity", l => 
-                        (l.source.company === d.company || l.target.company === d.company) ? 0.4 : 0.1);
+                    .style("opacity", l => {
+                        if (l.source.company === d.company && l.target.company === d.company) {
+                            return 0.8;  // Highest opacity for intra-cluster links
+                        } else if (l.source.company === d.company || l.target.company === d.company) {
+                            return 0.3;  // Medium opacity for connections to other clusters
+                        } else {
+                            return 0.05; // Very low opacity for unrelated links
+                        }
+                    })
+                    .style("stroke-width", l => {
+                        if (l.source.company === d.company && l.target.company === d.company) {
+                            return 2;  // Thicker lines for intra-cluster links
+                        } else if (l.source.company === d.company || l.target.company === d.company) {
+                            return 1.5;  // Medium thickness for connections to other clusters
+                        } else {
+                            return 1; // Default thickness for unrelated links
+                        }
+                    });
                 
                 node.transition().duration(750)
                     .style("opacity", n => 
@@ -389,11 +408,13 @@
             }
         }
 
-        // Add background click handler to reset zoom
+        // Update the background click handler
         svg.on("click", function() {
-            // Reset all opacities
-            link.transition().duration(750).style("opacity", 0.4);
-            node.transition().duration(750).style("opacity", 1);
+            link.transition().duration(750)
+                .style("opacity", 0.4)
+                .style("stroke-width", 1);  // Reset stroke width
+            node.transition().duration(750)
+                .style("opacity", 1);
             
             svg.transition().duration(750)
                 .call(zoom.transform, d3.zoomIdentity);
