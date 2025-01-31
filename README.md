@@ -1,7 +1,7 @@
 # LinkMap
 A tool to visualize your LinkedIn connections in an interactive network graph, helping you understand your professional network distribution.
 
-🔗 [Live Demo](https://tejasrpawar.github.io/linkedin-network-viz/)
+🔗 [Demo](https://tejasrpawar.github.io/LinkMap/)
 
 ## Overview
 This project helps professionals understand and expand their networks by providing interactive visualization tools for LinkedIn connections.
