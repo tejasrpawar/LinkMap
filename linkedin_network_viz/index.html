@@ -8,10 +8,12 @@
 
     body {
         margin: 0;
-        padding: 20px;
+        padding: 0;  /* Remove padding */
         font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
         background: #1a1a1a;  /* Dark gray background */
         color: #fff;
+        min-height: 100vh;
+        overflow: hidden;
     }
 
     .links line {
@@ -82,14 +84,47 @@
         border-color: rgba(255, 255, 255, 0.3);
         background: rgba(255, 255, 255, 0.08);
     }
+
+    /* Add these styles for centering */
+    .content-container {
+        max-width: 600px;
+        width: 100%;
+        text-align: center;
+        position: absolute;
+        left: 50%;
+        top: 50%;
+        transform: translate(-50%, -50%);
+        z-index: 1;
+        padding: 20px;
+        background: rgba(26, 26, 26, 0.9);
+        border-radius: 12px;
+        backdrop-filter: blur(8px);
+        transition: opacity 0.5s ease-out;
+    }
+
+    .content-container.hidden {
+        opacity: 0;
+        pointer-events: none;
+    }
+
+    svg {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        z-index: 0;
+    }
 </style>
-<svg height="0"></svg>
-<p><h1>Visualize your LinkedIn Connections</h1></p>
-<p><a href="https://www.linkedin.com/help/linkedin/answer/66844/export-connections-from-linkedin" target="_blank">
-    Export your Connections from LinkedIn</a></p>
-<p>Then import the csv file here: *</p>
-<input id="csv" type="file">
-<p>* you may need to remove the LinkedIn's notes from the csv file </p>
+<svg></svg>
+<div class="content-container">
+    <h1>Visualize your LinkedIn Connections</h1>
+    <p><a href="https://www.linkedin.com/help/linkedin/answer/66844/export-connections-from-linkedin" target="_blank">
+        Export your Connections from LinkedIn</a></p>
+    <p>Then import the csv file here: *</p>
+    <input id="csv" type="file">
+    <p>* you may need to remove the LinkedIn's notes from the csv file </p>
+</div>
 
 <script src="https://d3js.org/d3.v4.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
@@ -213,6 +248,12 @@
      * https://bl.ocks.org/heybignick/3faf257bbbbc7743bb72310d03b86ee8
     */
     function render(graph) {
+        // Hide the UI container and remove from layout flow
+        document.querySelector('.content-container').classList.add('hidden');
+        setTimeout(() => {
+            document.querySelector('.content-container').style.display = 'none';
+        }, 500); // Wait for fade out animation to complete
+
         const width = $(window).width();
         const height = $(window).height();
 
@@ -412,7 +453,7 @@
         svg.on("click", function() {
             link.transition().duration(750)
                 .style("opacity", 0.4)
-                .style("stroke-width", 1);  // Reset stroke width
+                .style("stroke-width", 1);
             node.transition().duration(750)
                 .style("opacity", 1);
             
