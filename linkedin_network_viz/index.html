@@ -4,74 +4,83 @@
 <title>LinkedIn Network Visualizer</title>
 <link rel="canonical" href="https://tejasrpawar.github.io/linkedin-network-viz/" />
 <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap');
+
     body {
         margin: 0;
         padding: 20px;
-        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-        background: linear-gradient(135deg, #2c3e50, #3a506b);
-        color: #fff;  /* Make text white for better contrast */
+        font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+        background: #1a1a1a;  /* Dark gray background */
+        color: #fff;
     }
 
     .links line {
-        stroke: #999;
+        stroke: #404040;  /* Darker gray for links */
         stroke-opacity: 0.4;
         stroke-width: 1px;
     }
 
     .nodes circle {
-        stroke: rgba(255, 255, 255, 0.8);  /* Slightly transparent white stroke */
+        stroke: rgba(255, 255, 255, 0.8);
         stroke-width: 2px;
-        transition: r 0.2s;
+        transition: r 0.2s, filter 0.2s;
     }
 
     .nodes circle:hover {
         r: 8;
+        filter: brightness(1.2);
     }
 
     text {
-        font-family: 'Segoe UI', sans-serif;
+        font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
         font-size: 11px;
-        fill: #e6e6e6;  /* Slightly off-white for better readability */
+        fill: #e6e6e6;
         text-shadow: 
-            -1px -1px 3px rgba(0,0,0,0.5),
-             1px -1px 3px rgba(0,0,0,0.5),
-            -1px 1px 3px rgba(0,0,0,0.5),
-             1px 1px 3px rgba(0,0,0,0.5);  /* Multiple shadows for better outline */
+            -1px -1px 3px rgba(0,0,0,0.7),
+             1px -1px 3px rgba(0,0,0,0.7),
+            -1px 1px 3px rgba(0,0,0,0.7),
+             1px 1px 3px rgba(0,0,0,0.7);
         pointer-events: none;
+        letter-spacing: -0.01em;
     }
 
     h1 {
         color: #fff;
         margin-bottom: 30px;
+        font-weight: 600;
+        letter-spacing: -0.02em;
     }
 
     p {
         color: rgba(255, 255, 255, 0.9);
         line-height: 1.6;
+        font-weight: 400;
+        letter-spacing: -0.01em;
     }
 
     a {
-        color: #64b5f6;  /* Lighter blue for better visibility */
+        color: #4dabf7;  /* Brighter blue for better contrast */
         text-decoration: none;
+        transition: color 0.2s;
     }
 
     a:hover {
-        color: #90caf9;
-        text-decoration: underline;
+        color: #74c0fc;
     }
 
     input[type="file"] {
         padding: 10px;
-        border: 2px dashed rgba(255, 255, 255, 0.3);
-        border-radius: 5px;
+        border: 2px dashed rgba(255, 255, 255, 0.2);
+        border-radius: 8px;
         margin: 20px 0;
-        background: rgba(255, 255, 255, 0.1);
+        background: rgba(255, 255, 255, 0.05);
         color: #fff;
+        transition: all 0.2s ease;
     }
 
     input[type="file"]:hover {
-        border-color: rgba(255, 255, 255, 0.5);
-        background: rgba(255, 255, 255, 0.15);
+        border-color: rgba(255, 255, 255, 0.3);
+        background: rgba(255, 255, 255, 0.08);
     }
 </style>
 <svg height="0"></svg>
