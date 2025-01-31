@@ -1,19 +1,60 @@
 <!DOCTYPE html>
 <meta charset="utf-8">
 <style>
+    body {
+        margin: 0;
+        padding: 20px;
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        background-color: #f5f5f5;
+    }
+
     .links line {
         stroke: #999;
-        stroke-opacity: 0.6;
+        stroke-opacity: 0.4;
+        stroke-width: 1px;
     }
 
     .nodes circle {
         stroke: #fff;
-        stroke-width: 1.5px;
+        stroke-width: 2px;
+        transition: r 0.2s;
+    }
+
+    .nodes circle:hover {
+        r: 8;
     }
 
     text {
-        font-family: sans-serif;
-        font-size: 10px;
+        font-family: 'Segoe UI', sans-serif;
+        font-size: 11px;
+        fill: #333;
+        pointer-events: none;
+    }
+
+    h1 {
+        color: #0077b5;
+        margin-bottom: 30px;
+    }
+
+    p {
+        color: #666;
+        line-height: 1.6;
+    }
+
+    a {
+        color: #0077b5;
+        text-decoration: none;
+    }
+
+    a:hover {
+        text-decoration: underline;
+    }
+
+    input[type="file"] {
+        padding: 10px;
+        border: 2px dashed #ccc;
+        border-radius: 5px;
+        margin: 20px 0;
     }
 </style>
 <svg height="0"></svg>
@@ -39,11 +80,7 @@
         reader.onload = function () {
             const result = reader.result.substring(reader.result.search(LINKED_IN_CSV_HEADER));
             const connections = $.csv.toObjects(result);
-            
-            nodes.length = 0;
-            links.length = 0;
 
-            // Add yourself as the first node
             nodes.push({
                 "firstName": "You",
                 "lastName": "",
@@ -51,59 +88,85 @@
                 "company": ""
             });
 
-            // First pass: count companies
             const companyCountMap = new Map([]);
-            for (const source of connections) {
-                const company = source["Company"] || "";
+            // First pass: count companies
+            for (source of connections) {
+                const company = source["Company"]?.trim() || "Unknown";  // Handle empty companies
                 if (companyCountMap.has(company)) {
-                    companyCountMap.set(
-                        company,
-                        companyCountMap.get(company)+1
-                    )
+                    companyCountMap.set(company, companyCountMap.get(company)+1);
                 } else {
                     companyCountMap.set(company, 1);
                 }
             }
 
-            // Second pass: create nodes and links
-            const addedNodes = new Set(["You"]); // Track which nodes we've added
+            // Set to keep track of added nodes to prevent duplicates
+            const addedNodes = new Set(["You"]);
+            
+            for (source of connections) {
+                const firstName = source["First Name"]?.trim() || "";
+                const lastName = source["Last Name"]?.trim() || "";
+                const sourceName = `${firstName} ${lastName}`.trim();
+                const sourceCompany = source["Company"]?.trim() || "Unknown";
 
-            for (const source of connections) {
-                const sourceName = `${source["First Name"] || ""} ${source["Last Name"] || ""}`.trim();
-                if (!sourceName) continue; // Skip empty names
-                const sourceCompany = source["Company"] || "";
+                // Skip if the name is empty or company doesn't meet minimum size
+                if (!sourceName || companyCountMap.get(sourceCompany) < MINIMUM_COMPANY_SIZE) {
+                    continue;
+                }
 
-                if (companyCountMap.get(sourceCompany) >= MINIMUM_COMPANY_SIZE) {
-                    // Add connection to "You"
-                    links.push({
-                        "source": "You",
-                        "target": sourceName
+                // Add connection to "You"
+                links.push({
+                    "source": "You",
+                    "target": sourceName
+                });
+
+                // Only add node if not already added
+                if (!addedNodes.has(sourceName)) {
+                    nodes.push({
+                        "firstName": firstName,
+                        "lastName": lastName,
+                        "name": sourceName,
+                        "company": sourceCompany
                     });
+                    addedNodes.add(sourceName);
+                }
 
-                    // Only add node if we haven't already
-                    if (!addedNodes.has(sourceName)) {
-                        nodes.push({
-                            "firstName": source["First Name"] || "",
-                            "lastName": source["Last Name"] || "",
-                            "name": sourceName,
-                            "company": sourceCompany
+                // Add connections between people in the same company
+                for (target of connections) {
+                    const targetFirstName = target["First Name"]?.trim() || "";
+                    const targetLastName = target["Last Name"]?.trim() || "";
+                    const targetName = `${targetFirstName} ${targetLastName}`.trim();
+                    
+                    if (sourceName !== targetName && 
+                        sourceCompany === target["Company"] && 
+                        targetName) {  // Ensure target name is not empty
+                        links.push({
+                            "source": sourceName,
+                            "target": targetName
                         });
-                        addedNodes.add(sourceName);
-                    }
-
-                    // Add connections between people at same company
-                    for (const target of connections) {
-                        const targetName = `${target["First Name"] || ""} ${target["Last Name"] || ""}`.trim();
-                        if (!targetName) continue; // Skip empty names
-                        if (sourceName != targetName && sourceCompany == target["Company"]) {
-                            links.push({
-                                "source": sourceName,
-                                "target": targetName
-                            });
-                        }
                     }
                 }
             }
+
+            // Filter out nodes that have no connections
+            const connectedNodes = new Set();
+            links.forEach(link => {
+                connectedNodes.add(link.source);
+                connectedNodes.add(link.target);
+            });
+            
+            nodes.length = 0;  // Clear the nodes array
+            Array.from(connectedNodes).forEach(nodeName => {
+                const connection = connections.find(c => 
+                    `${c["First Name"]?.trim()} ${c["Last Name"]?.trim()}`.trim() === nodeName
+                ) || { "First Name": "You", "Last Name": "", "Company": "" };
+                
+                nodes.push({
+                    "firstName": connection["First Name"]?.trim() || "",
+                    "lastName": connection["Last Name"]?.trim() || "",
+                    "name": nodeName,
+                    "company": connection["Company"]?.trim() || ""
+                });
+            });
 
             graph = {
                 "nodes": nodes,
@@ -111,7 +174,6 @@
             }
 
             render(graph);
-
         };
         reader.readAsBinaryString(fileInput.files[0]);
     };
@@ -134,10 +196,36 @@
 
         const color = d3.scaleOrdinal(d3.schemeCategory20);
 
+        // Create a force for clustering by company with more spread
+        const forceCluster = (alpha) => {
+            const centroids = new Map();
+            const strength = 0.2; // Reduced strength for looser clusters
+
+            // Calculate centroids for each company with more spread
+            graph.nodes.forEach(d => {
+                if (!centroids.has(d.company)) {
+                    centroids.set(d.company, {
+                        x: width / 2 + 400 * (Math.random() - 0.5), // Increased spread
+                        y: height / 2 + 400 * (Math.random() - 0.5)  // Increased spread
+                    });
+                }
+                const centroid = centroids.get(d.company);
+                d.vx += (centroid.x - d.x) * strength * alpha;
+                d.vy += (centroid.y - d.y) * strength * alpha;
+            });
+        };
+
         simulation = d3.forceSimulation()
-            .force("link", d3.forceLink().id(function (d) { return d.name; }))
-            .force("charge", d3.forceManyBody().strength(-100).distanceMax(0.2 * Math.min(width, height)))
-            .force("center", d3.forceCenter(width / 2, height / 2));
+            .force("link", d3.forceLink().id(d => d.name)
+                .distance(d => d.source.company === d.target.company ? 100 : 300) // Increased distances
+                .strength(d => d.source.company === d.target.company ? 0.5 : 0.1)) // Reduced strength for more flexibility
+            .force("charge", d3.forceManyBody()
+                .strength(d => d.name === "You" ? -2000 : -800) // Increased repulsion
+                .distanceMax(500)) // Increased max distance
+            .force("center", d3.forceCenter(width / 2, height / 2))
+            .force("x", d3.forceX(width / 2).strength(0.05)) // Reduced strength to allow more spread
+            .force("y", d3.forceY(height / 2).strength(0.05))
+            .force("cluster", forceCluster);
 
         const link = svg.append("g")
             .attr("class", "links")
@@ -153,19 +241,24 @@
             .enter().append("g")
 
         const circles = node.append("circle")
-            .attr("r", 5)
-            .attr("fill", function(d) { return color(d.company); })
+            .attr("r", d => d.name === "You" ? 10 : 8) // Increased node sizes
+            .attr("fill", function(d) { 
+                return d.name === "You" ? "#0077b5" : color(d.company); 
+            })
+            .style("filter", "drop-shadow(0 2px 2px rgba(0,0,0,0.1))")
             .call(d3.drag()
                 .on("start", dragstarted)
                 .on("drag", dragged)
                 .on("end", dragended));
 
-        const lables = node.append("text")
+        const labels = node.append("text")
             .text(function (d) {
                 return d.name;
             })
-            .attr('x', 6)
-            .attr('y', 3);
+            .attr('x', 12) // Increased text offset
+            .attr('y', 4)
+            .style("font-size", "12px") // Increased font size
+            .style("text-shadow", "0 1px 1px rgba(255,255,255,0.8)");
 
         node.append("title")
             .text(function (d) { return d.company; });
