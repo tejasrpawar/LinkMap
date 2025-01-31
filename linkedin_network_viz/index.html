@@ -5,7 +5,8 @@
         margin: 0;
         padding: 20px;
         font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-        background-color: #f5f5f5;
+        background: linear-gradient(135deg, #2c3e50, #3a506b);
+        color: #fff;  /* Make text white for better contrast */
     }
 
     .links line {
@@ -15,7 +16,7 @@
     }
 
     .nodes circle {
-        stroke: #fff;
+        stroke: rgba(255, 255, 255, 0.8);  /* Slightly transparent white stroke */
         stroke-width: 2px;
         transition: r 0.2s;
     }
@@ -27,34 +28,47 @@
     text {
         font-family: 'Segoe UI', sans-serif;
         font-size: 11px;
-        fill: #333;
+        fill: #e6e6e6;  /* Slightly off-white for better readability */
+        text-shadow: 
+            -1px -1px 3px rgba(0,0,0,0.5),
+             1px -1px 3px rgba(0,0,0,0.5),
+            -1px 1px 3px rgba(0,0,0,0.5),
+             1px 1px 3px rgba(0,0,0,0.5);  /* Multiple shadows for better outline */
         pointer-events: none;
     }
 
     h1 {
-        color: #0077b5;
+        color: #fff;
         margin-bottom: 30px;
     }
 
     p {
-        color: #666;
+        color: rgba(255, 255, 255, 0.9);
         line-height: 1.6;
     }
 
     a {
-        color: #0077b5;
+        color: #64b5f6;  /* Lighter blue for better visibility */
         text-decoration: none;
     }
 
     a:hover {
+        color: #90caf9;
         text-decoration: underline;
     }
 
     input[type="file"] {
         padding: 10px;
-        border: 2px dashed #ccc;
+        border: 2px dashed rgba(255, 255, 255, 0.3);
         border-radius: 5px;
         margin: 20px 0;
+        background: rgba(255, 255, 255, 0.1);
+        color: #fff;
+    }
+
+    input[type="file"]:hover {
+        border-color: rgba(255, 255, 255, 0.5);
+        background: rgba(255, 255, 255, 0.15);
     }
 </style>
 <svg height="0"></svg>
@@ -190,9 +204,24 @@
         const width = $(window).width();
         const height = $(window).height();
 
+        // Clear any existing SVG content
+        d3.select("svg").selectAll("*").remove();
+
         const svg = d3.select("svg")
             .attr("width", width)
             .attr("height", height);
+
+        // Add zoom behavior
+        const g = svg.append("g");
+        const zoom = d3.zoom()
+            .scaleExtent([0.2, 4])
+            .on("zoom", zoomed);
+        
+        svg.call(zoom);
+
+        function zoomed() {
+            g.attr("transform", d3.event.transform);
+        }
 
         const color = d3.scaleOrdinal(d3.schemeCategory20);
 
@@ -227,38 +256,48 @@
             .force("y", d3.forceY(height / 2).strength(0.05))
             .force("cluster", forceCluster);
 
-        const link = svg.append("g")
+        // Create links in the g container instead of svg
+        const link = g.append("g")
             .attr("class", "links")
             .selectAll("line")
             .data(graph.links)
             .enter().append("line")
             .attr("stroke-width", function (d) { return color(d.company); });
 
-        const node = svg.append("g")
+        // Create nodes in the g container instead of svg
+        const node = g.append("g")
             .attr("class", "nodes")
             .selectAll("g")
             .data(graph.nodes)
-            .enter().append("g")
+            .enter().append("g");
 
         const circles = node.append("circle")
-            .attr("r", d => d.name === "You" ? 10 : 8) // Increased node sizes
+            .attr("r", d => d.name === "You" ? 10 : 8)
             .attr("fill", function(d) { 
                 return d.name === "You" ? "#0077b5" : color(d.company); 
             })
             .style("filter", "drop-shadow(0 2px 2px rgba(0,0,0,0.1))")
+            .style("cursor", "pointer")
             .call(d3.drag()
                 .on("start", dragstarted)
                 .on("drag", dragged)
-                .on("end", dragended));
+                .on("end", dragended))
+            .on("click", clicked); // Add click handler
 
         const labels = node.append("text")
             .text(function (d) {
                 return d.name;
             })
-            .attr('x', 12) // Increased text offset
+            .attr('x', 12)
             .attr('y', 4)
-            .style("font-size", "12px") // Increased font size
-            .style("text-shadow", "0 1px 1px rgba(255,255,255,0.8)");
+            .style("font-size", d => d.name === "You" ? "14px" : "12px")
+            .style("font-weight", d => d.name === "You" ? "bold" : "normal")
+            .style("fill", d => d.name === "You" ? "#ffffff" : "#e6e6e6")
+            .style("text-shadow", 
+                "-1px -1px 3px rgba(0,0,0,0.5)," +
+                "1px -1px 3px rgba(0,0,0,0.5)," +
+                "-1px 1px 3px rgba(0,0,0,0.5)," +
+                "1px 1px 3px rgba(0,0,0,0.5)");
 
         node.append("title")
             .text(function (d) { return d.company; });
@@ -282,6 +321,71 @@
                     return "translate(" + d.x + "," + d.y + ")";
                 })
         }
+
+        // Add click handler function
+        function clicked(d) {
+            const event = d3.event;
+            event.stopPropagation(); // Prevent click from bubbling up
+
+            if (event.defaultPrevented) return; // Skip if dragged
+
+            const transition = svg.transition().duration(750);
+            
+            if (d3.event.shiftKey) {
+                // Reset zoom on shift+click
+                svg.transition().duration(750)
+                    .call(zoom.transform, d3.zoomIdentity);
+                // Reset all opacities
+                link.transition().duration(750).style("opacity", 0.4);
+                node.transition().duration(750).style("opacity", 1);
+                return;
+            }
+
+            // Find all nodes in the same company
+            const companyNodes = graph.nodes.filter(n => n.company === d.company);
+            
+            if (companyNodes.length > 0) {
+                // Calculate the bounding box of the company cluster
+                const bounds = {
+                    left: d3.min(companyNodes, n => n.x),
+                    right: d3.max(companyNodes, n => n.x),
+                    top: d3.min(companyNodes, n => n.y),
+                    bottom: d3.max(companyNodes, n => n.y)
+                };
+
+                const dx = bounds.right - bounds.left,
+                    dy = bounds.bottom - bounds.top,
+                    x = (bounds.left + bounds.right) / 2,
+                    y = (bounds.top + bounds.bottom) / 2,
+                    scale = Math.min(8, 0.9 / Math.max(dx / width, dy / height)),
+                    translate = [width / 2 - scale * x, height / 2 - scale * y];
+
+                // Fade out unrelated nodes and links
+                link.transition().duration(750)
+                    .style("opacity", l => 
+                        (l.source.company === d.company || l.target.company === d.company) ? 0.4 : 0.1);
+                
+                node.transition().duration(750)
+                    .style("opacity", n => 
+                        n.company === d.company ? 1 : 0.2);
+
+                svg.transition().duration(750)
+                    .call(zoom.transform, 
+                        d3.zoomIdentity
+                            .translate(translate[0], translate[1])
+                            .scale(scale));
+            }
+        }
+
+        // Add background click handler to reset zoom
+        svg.on("click", function() {
+            // Reset all opacities
+            link.transition().duration(750).style("opacity", 0.4);
+            node.transition().duration(750).style("opacity", 1);
+            
+            svg.transition().duration(750)
+                .call(zoom.transform, d3.zoomIdentity);
+        });
     }
 
     function dragstarted(d) {
