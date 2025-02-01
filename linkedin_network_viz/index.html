@@ -115,15 +115,64 @@
         height: 100%;
         z-index: 0;
     }
+
+    /* Add these new styles for the funky header */
+    .brand-header {
+        font-size: 4em;
+        font-weight: 800;
+        margin-bottom: 20px;
+        background: linear-gradient(45deg, #4dabf7, #74c0fc);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        text-shadow: 2px 2px 20px rgba(77, 171, 247, 0.2);
+        font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+        letter-spacing: -0.03em;
+        transform: scale(1);
+        transition: transform 0.3s ease;
+    }
+
+    .brand-header:hover {
+        transform: scale(1.02);
+    }
+
+    /* Add these styles */
+    .sample-option {
+        margin-top: 30px;
+        padding-top: 20px;
+        border-top: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .divider {
+        color: rgba(255, 255, 255, 0.6);
+        font-size: 0.9em;
+        margin: 10px 0;
+    }
+
+    .sample-option a {
+        color: #4dabf7;
+        text-decoration: none;
+        transition: color 0.2s;
+    }
+
+    .sample-option a:hover {
+        color: #74c0fc;
+        text-decoration: underline;
+    }
 </style>
 <svg></svg>
 <div class="content-container">
-    <h1>Visualize your LinkedIn Connections</h1>
+    <h1 class="brand-header">L<span style="color: #0077b5;">i</span>nkMap</h1>
+    <h2>Visualize your LinkedIn Connections</h2>
     <p><a href="https://www.linkedin.com/help/linkedin/answer/66844/export-connections-from-linkedin" target="_blank">
         Export your Connections from LinkedIn</a></p>
     <p>Then import the csv file here: *</p>
     <input id="csv" type="file">
     <p>* you may need to remove the LinkedIn's notes from the csv file </p>
+    
+    <div class="sample-option">
+        <p class="divider">or</p>
+        <p>Don't want to export contacts? <a href="#" id="sample-data" onclick="loadSampleData()">Use this sample file</a></p>
+    </div>
 </div>
 
 <script src="https://d3js.org/d3.v4.min.js"></script>
